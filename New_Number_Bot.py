@@ -2479,18 +2479,27 @@ def cleanup():
 atexit.register(cleanup)
 
 # --- Main Execution ---
-if __name__ == '__main__':
-    logger.info("="*40 + "\n🤖 Bot Starting Up...\n" + f"🐍 Python: {sys.version.split()[0]}\n" +
-                f"🔧 Base Dir: {BASE_DIR}\n📁 Upload Dir: {UPLOAD_BOTS_DIR}\n" +
-                f"📊 Data Dir: {IROTECH_DIR}\n🔑 Owner ID: {OWNER_ID}\n🛡️ Admins: {admin_ids}\n" + "="*40)
-    keep_alive()
-    logger.info("🚀 Starting polling...")
+def start_bot_polling():
+    logger.info("🚀 Starting Telegram polling...")
     while True:
         try:
-            bot.infinity_polling(logger_level=logging.INFO, timeout=60, long_polling_timeout=30)
-        except requests.exceptions.ReadTimeout: logger.warning("Polling ReadTimeout. Restarting in 5s..."); time.sleep(5)
-        except requests.exceptions.ConnectionError as ce: logger.error(f"Polling ConnectionError: {ce}. Retrying in 15s..."); time.sleep(15)
+            bot.infinity_polling(
+                logger_level=logging.INFO,
+                timeout=60,
+                long_polling_timeout=30
+            )
+        except requests.exceptions.ReadTimeout:
+            logger.warning("Polling timeout. Restarting in 5s...")
+            time.sleep(5)
+        except requests.exceptions.ConnectionError as e:
+            logger.error(f"Polling connection error: {e}")
+            time.sleep(15)
         except Exception as e:
-            logger.critical(f"💥 Unrecoverable polling error: {e}", exc_info=True)
-            logger.info("Restarting polling in 30s due to critical error..."); time.sleep(30)
-        finally: logger.warning("Polling attempt finished. Will restart if in loop."); time.sleep(1)
+            logger.error(f"Polling error: {e}", exc_info=True)
+            time.sleep(30)
+
+
+threading.Thread(
+    target=start_bot_polling,
+    daemon=True
+).start()
